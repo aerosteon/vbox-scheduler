@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VBox Scheduler</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #0b0f17; color: #f1f5f9; }
+        .container { padding: 24px; }
+        h1 { margin-bottom: 8px; }
+        .muted { color: #94a3b8; margin-bottom: 24px; }
+        .card { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 20px; margin-bottom: 24px; }
+        h2 { margin-top: 0; margin-bottom: 20px; }
+        form { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+        .nav { display: flex; gap: 10px; margin-bottom: 24px; }
+        .nav a {
+            color: #dbeafe;
+            background: #172554;
+            border: 1px solid #1d4ed8;
+            padding: 9px 12px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .nav a.active { background: #2563eb; color: white; }
+
+        input, select, button {
+            background: #0b1220;
+            color: white;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px 12px;
+            color-scheme: dark;
+        }
+
+        input[type="datetime-local"] {
+            color-scheme: dark;
+        }
+
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            opacity: 1;
+            cursor: pointer;
+        }
+
+        button { background: #2563eb; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #1d4ed8; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; color: #94a3b8; font-size: 12px; padding: 12px; border-bottom: 1px solid #1f2937; }
+        td { padding: 14px 12px; border-bottom: 1px solid #1f2937; }
+
+        .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: bold; }
+        .badge-scheduled { background: #1e3a8a; color: #bfdbfe; }
+        .badge-recording { background: #991b1b; color: #fecaca; }
+        .badge-recorded { background: #14532d; color: #bbf7d0; }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #f87171;
+            display: inline-block;
+            animation: pulse 1.4s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.8); }
+            70% { box-shadow: 0 0 0 8px rgba(248, 113, 113, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
+        }
+
+        a.action { text-decoration: none; font-weight: bold; }
+        a.cancel, a.stop { color: #f87171; }
+        a.delete { color: #fb923c; font-size: 18px; }
+
+        .empty { color: #94a3b8; padding: 12px; border: 1px dashed #334155; border-radius: 10px; }
+        .section { margin-top: 24px; }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>VBox Scheduler</h1>
+    <div class="muted">Connected to {{ vbox_base_url }}</div>
+
+    <div class="nav">
+        <a href="/">Guide</a>
+        <a class="active" href="/schedule">Schedule</a>
+    </div>
+
+    <div class="card">
+        <h2>Schedule Recording</h2>
+
+        <form action="/schedule" method="post">
+            <select name="channel_id" required>
+                {% for channel in channels %}
+                    <option value="{{ channel.id }}">
+                        {{ channel.name }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <input type="text" name="title" placeholder="Recording title" required>
+            <input type="datetime-local" name="start_time" required>
+            <input type="datetime-local" name="end_time" required>
+            <button type="submit">Schedule</button>
+        </form>
+    </div>
+
+    <div class="card section">
+        <h2>Scheduled</h2>
+        {% if groups.scheduled %}
+            <table>
+                <tr><th>Title</th><th>Channel</th><th>Start</th><th>End</th><th>Status</th><th>Action</th></tr>
+                {% for record in groups.scheduled %}
+                    <tr>
+                        <td>{{ record.title }}</td>
+                        <td>{{ record.channel }}</td>
+                        <td>{{ record.start }}</td>
+                        <td>{{ record.end }}</td>
+                        <td><span class="badge badge-scheduled">scheduled</span></td>
+                        <td><a class="action cancel" href="/cancel/{{ record.id }}">Cancel</a></td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <div class="empty">📅 No scheduled recordings.</div>
+        {% endif %}
+    </div>
+
+    <div class="card section">
+        <h2>Recording Now</h2>
+        {% if groups.recording %}
+            <table>
+                <tr><th>Title</th><th>Channel</th><th>Start</th><th>End</th><th>Status</th><th>Action</th></tr>
+                {% for record in groups.recording %}
+                    <tr>
+                        <td>{{ record.title }}</td>
+                        <td>{{ record.channel }}</td>
+                        <td>{{ record.start }}</td>
+                        <td>{{ record.end }}</td>
+                        <td><span class="badge badge-recording"><span class="live-dot"></span>recording</span></td>
+                        <td><a class="action stop" href="/cancel/{{ record.id }}" onclick="return confirm('Stop this recording?');">Stop</a></td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <div class="empty">🔴 Nothing recording right now.</div>
+        {% endif %}
+    </div>
+
+    <div class="card section">
+        <h2>Completed</h2>
+        {% if groups.recorded %}
+            <table>
+                <tr><th>Title</th><th>Channel</th><th>Start</th><th>End</th><th>Status</th><th>Action</th></tr>
+                {% for record in groups.recorded %}
+                    <tr>
+                        <td>{{ record.title }}</td>
+                        <td>{{ record.channel }}</td>
+                        <td>{{ record.start }}</td>
+                        <td>{{ record.end }}</td>
+                        <td><span class="badge badge-recorded">recorded</span></td>
+                        <td>
+                            <a class="action delete" href="/delete/{{ record.id }}" title="Delete recording" onclick="return confirm('Delete this recording and its file?');">🗑️</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <div class="empty">🎬 No completed recordings.</div>
+        {% endif %}
+    </div>
+
+</div>
+</body>
+</html>

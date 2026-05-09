@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VBox Guide</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #0b0f17; color: #f1f5f9; overflow-x: hidden; }
+        .container { padding: 24px; max-width: 100vw; box-sizing: border-box; }
+        h1 { margin-bottom: 8px; }
+        .muted { color: #94a3b8; margin-bottom: 24px; }
+        .card { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 20px; margin-bottom: 24px; overflow: hidden; }
+        h2 { margin-top: 0; margin-bottom: 20px; }
+
+        .nav { display: flex; gap: 10px; margin-bottom: 24px; }
+        .nav a {
+            color: #dbeafe;
+            background: #172554;
+            border: 1px solid #1d4ed8;
+            padding: 9px 12px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .nav a.active { background: #2563eb; color: white; }
+
+        form.filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+
+        input, select, button {
+            background: #0b1220;
+            color: white;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px 12px;
+            color-scheme: dark;
+        }
+
+        button { background: #2563eb; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #1d4ed8; }
+
+        .method {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+
+        .error, .empty {
+            color: #fecaca;
+            padding: 12px;
+            border: 1px dashed #7f1d1d;
+            border-radius: 10px;
+            background: #450a0a;
+        }
+
+        .guide-panel {
+            width: 100%;
+            max-width: 100%;
+            height: calc(100vh - 315px);
+            min-height: 460px;
+            overflow: auto;
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            background: #0b1220;
+            position: relative;
+        }
+
+        .guide-inner {
+            position: relative;
+            min-width: calc(var(--channel-width) + var(--timeline-width));
+            width: calc(var(--channel-width) + var(--timeline-width));
+        }
+
+        .guide-header {
+            display: flex;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: #0f172a;
+            border-bottom: 1px solid #334155;
+            height: 44px;
+        }
+
+        .channel-header {
+            width: var(--channel-width);
+            min-width: var(--channel-width);
+            position: sticky;
+            left: 0;
+            z-index: 30;
+            background: #0f172a;
+            border-right: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            padding-left: 12px;
+            box-sizing: border-box;
+            font-weight: bold;
+            color: #bfdbfe;
+        }
+
+        .time-header {
+            position: relative;
+            width: var(--timeline-width);
+            min-width: var(--timeline-width);
+            height: 44px;
+        }
+
+        .time-slot {
+            position: absolute;
+            top: 0;
+            height: 44px;
+            border-left: 1px solid #334155;
+            padding-left: 8px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            color: #93c5fd;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .guide-row {
+            display: flex;
+            min-height: 74px;
+            border-bottom: 1px solid #1f2937;
+        }
+
+        .channel-cell {
+            width: var(--channel-width);
+            min-width: var(--channel-width);
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            background: #111827;
+            border-right: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            box-sizing: border-box;
+            font-weight: bold;
+            color: #e2e8f0;
+        }
+
+        .timeline-row {
+            position: relative;
+            width: var(--timeline-width);
+            min-width: var(--timeline-width);
+            min-height: 74px;
+            background-image: repeating-linear-gradient(
+                to right,
+                transparent 0,
+                transparent 149px,
+                rgba(51, 65, 85, 0.7) 150px
+            );
+        }
+
+        .programme-form {
+            position: absolute;
+            top: 8px;
+            height: 58px;
+            margin: 0;
+        }
+
+        .programme {
+            width: 100%;
+            height: 100%;
+            text-align: left;
+            border-radius: 10px;
+            background: #1e3a8a;
+            border: 1px solid #3b82f6;
+            color: #f8fafc;
+            padding: 7px 9px;
+            box-sizing: border-box;
+            overflow: hidden;
+            cursor: pointer;
+            display: block;
+            position: relative;
+        }
+
+        .programme:hover { background: #2563eb; }
+
+        .programme.scheduled {
+            border-color: #ef4444;
+            box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.5);
+        }
+
+        .programme-title {
+            font-size: 13px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 16px;
+        }
+
+        .programme-time {
+            color: #bfdbfe;
+            font-size: 11px;
+            margin-top: 3px;
+            white-space: nowrap;
+        }
+
+        .programme-desc {
+            color: #cbd5e1;
+            font-size: 11px;
+            margin-top: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .record-dot {
+            position: absolute;
+            top: 7px;
+            right: 7px;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #ef4444;
+            box-shadow: 0 0 0 2px rgba(127, 29, 29, 0.8), 0 0 8px rgba(248, 113, 113, 0.9);
+        }
+
+        .now-line {
+            position: absolute;
+            top: 44px;
+            bottom: 0;
+            width: 2px;
+            background: #ef4444;
+            box-shadow: 0 0 8px rgba(248, 113, 113, 0.9);
+            z-index: 15;
+            pointer-events: none;
+            transition: left 1s linear;
+        }
+
+        .now-line::before {
+            content: "";
+            position: absolute;
+            top: -7px;
+            left: -5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(248, 113, 113, 1);
+        }
+
+        .now-label {
+            position: absolute;
+            top: -34px;
+            left: -22px;
+            background: #991b1b;
+            color: #fee2e2;
+            border: 1px solid #ef4444;
+            border-radius: 999px;
+            padding: 3px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .window-label {
+            color: #94a3b8;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 800px) {
+            .container { padding: 14px; }
+            .card { padding: 14px; }
+            .guide-panel { height: calc(100vh - 290px); }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>VBox Guide</h1>
+    <div class="muted">Channels down the left, time across the top. Scroll inside the guide panel.</div>
+
+    <div class="nav">
+        <a class="active" href="/">Guide</a>
+        <a href="/schedule">Schedule</a>
+    </div>
+
+    <div class="card">
+        <h2>EPG</h2>
+
+        <form class="filters" action="/" method="get">
+            <select name="channel">
+                <option value="">All channels</option>
+                {% for channel in channels %}
+                    <option value="{{ channel.id }}" {% if selected_channel == channel.id %}selected{% endif %}>
+                        {{ channel.name }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <select name="hours">
+                <option value="6" {% if hours == 6 %}selected{% endif %}>Next 6 hours</option>
+                <option value="12" {% if hours == 12 %}selected{% endif %}>Next 12 hours</option>
+                <option value="24" {% if hours == 24 %}selected{% endif %}>Next 24 hours</option>
+                <option value="48" {% if hours == 48 %}selected{% endif %}>Next 48 hours</option>
+            </select>
+
+            <button type="submit">Load Guide</button>
+        </form>
+
+        {% if epg.error %}
+            <div class="error">{{ epg.error }}</div>
+        {% else %}
+            <div class="method">EPG source method: {{ epg.method }}</div>
+            <div class="window-label">{{ epg.window_label }}</div>
+
+            {% if epg.rows %}
+                <div class="guide-panel">
+                    <div
+                        class="guide-inner"
+                        data-window-start="{{ epg.window_start_iso if epg.window_start_iso is defined else '' }}"
+                        data-window-end="{{ epg.window_end_iso if epg.window_end_iso is defined else '' }}"
+                        data-channel-width="{{ epg.channel_col_width }}"
+                        data-px-per-minute="5"
+                        style="--channel-width: {{ epg.channel_col_width }}px; --timeline-width: {{ epg.timeline_width }}px;"
+                    >
+                        <div class="guide-header">
+                            <div class="channel-header">Channel</div>
+                            <div class="time-header">
+                                {% for slot in epg.time_slots %}
+                                    <div class="time-slot" style="left: {{ slot.left_px }}px;">
+                                        {{ slot.label }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        {% if epg.now_line_px is not none %}
+                            <div class="now-line" style="left: calc({{ epg.channel_col_width }}px + {{ epg.now_line_px }}px);">
+                                <div class="now-label">Now {{ epg.now_label }}</div>
+                            </div>
+                        {% endif %}
+
+                        {% for row in epg.rows %}
+                            <div class="guide-row">
+                                <div class="channel-cell">{{ row.name }}</div>
+                                <div class="timeline-row">
+                                    {% for programme in row.programmes %}
+                                        {% if programme.is_scheduled %}
+                                            <form class="programme-form" action="/epg/cancel" method="post" style="left: {{ programme.left_px }}px; width: {{ programme.width_px }}px;" onsubmit="return confirm('Cancel recording for {{ programme.title }}?');">
+                                                <input type="hidden" name="record_id" value="{{ programme.record_id }}">
+                                                <button class="programme scheduled" type="submit" title="{{ programme.title }}&#10;{{ programme.time }}&#10;Scheduled to record&#10;Click to cancel">
+                                                    <span class="record-dot" title="Scheduled to record"></span>
+                                                    <div class="programme-title">{{ programme.title }}</div>
+                                                    <div class="programme-time">{{ programme.time }}</div>
+                                                    {% if programme.desc %}
+                                                        <div class="programme-desc">{{ programme.desc }}</div>
+                                                    {% endif %}
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <form class="programme-form" action="/epg/record" method="post" style="left: {{ programme.left_px }}px; width: {{ programme.width_px }}px;" onsubmit="return confirm('Record {{ programme.title }}?');">
+                                                <input type="hidden" name="channel_id" value="{{ programme.channel_id }}">
+                                                <input type="hidden" name="title" value="{{ programme.title }}">
+                                                <input type="hidden" name="start_time" value="{{ programme.start_input }}">
+                                                <input type="hidden" name="end_time" value="{{ programme.stop_input }}">
+                                                <button class="programme" type="submit" title="{{ programme.title }}&#10;{{ programme.time }}&#10;{{ programme.desc }}&#10;Click to record">
+                                                    <div class="programme-title">{{ programme.title }}</div>
+                                                    <div class="programme-time">{{ programme.time }}</div>
+                                                    {% if programme.desc %}
+                                                        <div class="programme-desc">{{ programme.desc }}</div>
+                                                    {% endif %}
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty">No programmes found for this guide window.</div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+    function getWindowStartFromLabel() {
+        const label = document.querySelector('.window-label');
+        if (!label) {
+            return null;
+        }
+
+        const match = label.textContent.match(/(\d{2}):(\d{2})/);
+        if (!match) {
+            return null;
+        }
+
+        const now = new Date();
+        const start = new Date();
+
+        start.setHours(parseInt(match[1], 10));
+        start.setMinutes(parseInt(match[2], 10));
+        start.setSeconds(0);
+        start.setMilliseconds(0);
+
+        if (start > now && (start - now) > 12 * 60 * 60 * 1000) {
+            start.setDate(start.getDate() - 1);
+        }
+
+        return start;
+    }
+
+    function updateNowLine() {
+        const guideInner = document.querySelector('.guide-inner');
+        const nowLine = document.querySelector('.now-line');
+        const nowLabel = document.querySelector('.now-label');
+
+        if (!guideInner || !nowLine || !nowLabel) {
+            return;
+        }
+
+        const channelWidth = parseInt(guideInner.dataset.channelWidth || '170', 10);
+        const pxPerMinute = parseInt(guideInner.dataset.pxPerMinute || '5', 10);
+        const windowStart = getWindowStartFromLabel();
+
+        if (!windowStart) {
+            return;
+        }
+
+        const now = new Date();
+        const diffMinutes = (now - windowStart) / 60000;
+        const leftPx = channelWidth + (diffMinutes * pxPerMinute);
+
+        nowLine.style.left = `${leftPx}px`;
+
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+
+        nowLabel.textContent = `Now ${hh}:${mm}`;
+    }
+
+    updateNowLine();
+    setInterval(updateNowLine, 10000);
+
+    setInterval(() => {
+        const panel = document.querySelector('.guide-panel');
+        if (panel) {
+            sessionStorage.setItem('vboxGuideScrollLeft', panel.scrollLeft);
+            sessionStorage.setItem('vboxGuideScrollTop', panel.scrollTop);
+        }
+
+        window.location.reload();
+    }, 300000);
+
+    window.addEventListener('load', () => {
+        const panel = document.querySelector('.guide-panel');
+        if (!panel) {
+            return;
+        }
+
+        const savedLeft = sessionStorage.getItem('vboxGuideScrollLeft');
+        const savedTop = sessionStorage.getItem('vboxGuideScrollTop');
+
+        if (savedLeft !== null) {
+            panel.scrollLeft = parseInt(savedLeft, 10);
+        }
+
+        if (savedTop !== null) {
+            panel.scrollTop = parseInt(savedTop, 10);
+        }
+    });
+</script>
+
+</body>
+</html>

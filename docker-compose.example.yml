@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  vbox-scheduler:
+    image: vbox-scheduler:latest
+    container_name: vbox-scheduler
+
+    environment:
+      - TZ=Europe/London
+      - VBOX_BASE_URL=http://your-vbox-ip-or-dns
+      - CACHE_TTL_SECONDS=300
+
+    ports:
+      - "8000:8000"
+
+    restart: unless-stopped
