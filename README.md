@@ -45,54 +45,11 @@ Designed for homelab and self-hosted Docker environments.
 
 - FastAPI backend
 - Docker deployment
+- Published Docker image via GHCR
 - VBox XMLTV integration
 - Built-in caching
 - Responsive interface
 - Lightweight design
-
-
----
-
-# Requirements
-
-- VBox TV Gateway device
-- Docker
-- Network access to the VBox device
-
----
-
-# Quick Start
-
-## Clone repository
-
-```bash
-git clone https://github.com/aerosteon/vbox-scheduler.git
-cd vbox-scheduler
-```
-
-## Create environment file
-
-```bash
-cp .env.example .env
-```
-
-Edit:
-
-```env
-VBOX_BASE_URL=http://your-vbox-ip-or-dns
-```
-
-## Start container
-
-```bash
-docker compose up -d
-```
-
-Then open:
-
-```text
-http://your-server-ip:8000
-```
 
 ---
 
@@ -106,3 +63,16 @@ http://your-server-ip:8000
 
 ![Schedule Page](screenshots/schedule.png)
 
+---
+
+# Requirements
+
+- VBox TV Gateway device
+- Docker
+- Network access to the VBox device
+
+---
+
+# License
+
+MIT
