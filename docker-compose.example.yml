@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   vbox-scheduler:
-    image: vbox-scheduler:latest
+    image: ghcr.io/aerosteon/vbox-scheduler:latest
     container_name: vbox-scheduler
 
     environment:
